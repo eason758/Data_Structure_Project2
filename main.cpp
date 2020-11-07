@@ -11,50 +11,64 @@ using namespace std;
 //ifstream f;
 //ofstream o("final.path", ios::out);
 
-void init(Floor& floor, Robot& robot);
-void run(Floor& floor, Robot& robot);
-void output(Floor& floor, Robot& robot);
+void init(Floor& floor);
+void run(Floor& floor);
+void output(Floor& floor);
 
-void debug(Floor& floor, Robot& robot);
+
+
+
+
+
+
+
+
+
+
+void debug(Floor& floor);
 
 int main() {
 
 
 	//f.open(argv[1]);
 	Floor floor;
-	Robot robot;
 
-	init(floor, robot);
+	init(floor);
 
-	run(floor, robot);
+	run(floor);
 
-	output(floor, robot);
+	output(floor);
 
-
-	debug(floor, robot);
+	
+	debug(floor);
 
 	
 	return 0;
 }
 
 
-void init(Floor& floor,Robot& robot){
+void init(Floor& floor){
 	cout << "Initializing..." << endl;
 	int r, c, b;
 	cin >> r >> c >> b;
 
-	floor.init(r, c);
+	floor.init(r, c, b);
 	cout << "Floor init success!" << endl;
-	robot.init(b, floor.get_home());
-	cout << "Robot init success!" << endl;
-}
-
-void run(Floor& floor, Robot& robot) {
 
 
 }
 
-void output(Floor& floor, Robot& robot) {
+void run(Floor& floor) {
+
+	//while (floor.unclean_size() > 0) {
+	//
+		floor.clear();				//clean一次 = 出去又回來
+	//
+	//}
+
+}
+
+void output(Floor& floor) {
 
 
 
