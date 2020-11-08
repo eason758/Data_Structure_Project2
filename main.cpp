@@ -6,6 +6,9 @@
 #include "func.h"
 #include "robot.h"
 
+#include <time.h>
+
+
 using namespace std;
 
 //ifstream f;
@@ -29,9 +32,11 @@ void debug(Floor& floor);
 
 int main() {
 
+	START = clock();
 
 	//f.open(argv[1]);
 	Floor floor;
+	
 
 	init(floor);
 
@@ -39,9 +44,11 @@ int main() {
 
 	output(floor);
 
+	END = clock();
 	
 	debug(floor);
-
+	cout << "程式跑的時間:\n" << (END - PROCESS_START) / CLOCKS_PER_SEC << endl;
+	cout << "總共跑的時間:\n" << (END - START)/CLOCKS_PER_SEC << endl;
 	
 	return 0;
 }
