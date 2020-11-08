@@ -8,6 +8,11 @@
 #include <fstream>
 #include <vector>
 #include <set>
+#include <queue>
+#include <time.h>
+double START;
+double PROCESS_START;
+double END;
 using namespace std;
 
 struct coor {
@@ -32,14 +37,15 @@ enum attribute {
 struct cell {
 
 	coor loc;
-	set<int> visited_branches;
+	set<int> visited_branches;	
+	bool evaluated;
 	enum attribute attr;
 	int cost;
 
 	cell(coor _loc = coor(0, 0), set<int> v_b = set<int>{}, attribute _a = ROAD, int _cost = 0) :
-		loc(_loc), visited_branches(v_b), attr(_a), cost(_cost){}
+		loc(_loc), visited_branches(v_b), attr(_a), cost(_cost),evaluated(false){}
 	cell(coor _loc, attribute _a, int _cost = 0) :
-		loc(_loc), attr(_a), cost(_cost) {};
+		loc(_loc), attr(_a), cost(_cost), evaluated(false) {};
 
 
 };
@@ -57,9 +63,17 @@ struct Node {
 	int max_cost;
 	vector<int> branch;
 	Node(cell* c = new cell,Node*p = nullptr) :
-		cel(c),parent(p){}
+		cel(c),parent(p)
+	{
+		child[0] = nullptr;
+		child[1] = nullptr;
+		child[2] = nullptr;
+		child[3] = nullptr;
+
+	}
 
 };
+Node* reverse_tree(Node* cur);
 
 class OneTripTree {
 	Node* root;
@@ -70,7 +84,7 @@ class OneTripTree {
 
 public:
 	friend class Floor;
-	inline void set_root(Node* n) { root = n; root->branch.push_back(1); }
+	inline void set_root(Node* n) { root = n; }
 	inline Node* get_root() { return root; }
 
 	void delete_tree(Node * cur) {
@@ -93,6 +107,7 @@ class Floor {
 	int battery;
 	int min_step;
 	int cur_step;
+	Node * finalNode;
 	vector<cell*> unclean;
 	cell* home;
 	cell*** map;
@@ -118,6 +133,8 @@ public:
 
 private:
 
+	void distance_evaluation(cell* root);
+	Node** find_emp_cell(Node* root);
 	void walk();
 
 
