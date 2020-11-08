@@ -12,21 +12,10 @@ void Floor::set_node_max_cost(Node* node) {
 	int x = node->cel->loc.x;
 	int y = node->cel->loc.y;
 
-	cout << "\n"<<node->cost[0] << endl;
 	max = MAX(max, node->cost[0]);
-	cout << "max:" << max << endl;
-
-	cout << node->cost[1] << endl;
 	max = MAX(max, node->cost[1]);
-	cout << "max:" << max << endl;
-
-	cout << node->cost[2] << endl;
 	max = MAX(max, node->cost[2]);
-	cout << "max:" << max << endl;
-	
-	cout << node->cost[3] << endl;
 	max = MAX(max, node->cost[3]);
-	cout << "max:" << max << endl;
 	
 	node->max_cost =  max;
 }
@@ -52,9 +41,8 @@ void Floor::set_node_cost(Node* node) {
 
 	int x = node->cel->loc.x;
 	int y = node->cel->loc.y;
-	cout << "			(" << y << " , " << x << ")";
+	
 	// is it visited?
-
 	if (visited(node, 1, 0)) node->cost[0] = 0;
 	else node->cost[0] = map[y][x + 1]->cost;
 
@@ -88,7 +76,15 @@ void Floor::set_node_cost(Node* node) {
 
 
 
-
+Node* reverse_tree(Node* cur) {
+	if (cur != nullptr ) {
+		for (Node* tmp = cur->parent; tmp != nullptr; tmp = tmp->parent) {
+			tmp->child[0] = cur;
+			cur = tmp;
+		}
+	}
+	return cur;
+}
 
 
 void Floor::debug() {
@@ -110,7 +106,7 @@ void Floor::debug() {
 
 	for (int i = 0; i < row; i++) {
 		for (int j = 0; j < col; j++) {
-			cout << (*map[i][j]).cost << " ";
+			cout << map[i][j]->cost << " ";
 		}
 		cout << endl;
 	}
