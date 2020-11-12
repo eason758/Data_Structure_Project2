@@ -10,10 +10,10 @@
 
 void Floor::init(int r, int c, int b) {
 
+	finish = false;
 	row = r;
 	col = c;
 	battery = b;
-	min_step = 1000000000;
 	cur_step = 0;
 
 
@@ -35,7 +35,6 @@ void Floor::init(int r, int c, int b) {
 		}
 	}
 
-	tree.total_branch = 0;
 
 	PROCESS_START = clock();
 
@@ -81,12 +80,21 @@ void Floor::init(int r, int c, int b) {
 void Floor::clear(){
 
 
+	distance_evaluation(home);
+	
+	tree.set_root(new Node(home));
+	tree.leaves.push_back(tree.root);
+	tree.total_branch = 1;
+	tree.cur_branch = 1;
 
+	
 	do
 	{
-		distance_evaluation(home);
+		cur_step = 0;
 		walk();
+		//walk_back();
 	} while (0);
+		//!finish);
 
 }
 
@@ -99,101 +107,37 @@ void Floor::walk() {
 															*/
 
 
-	int flag = 100;
 
-	tree.set_root(new Node(home));
 
-	//root的例外
-	int x = tree.root->cel->loc.x;
-	int y = tree.root->cel->loc.y;		// current cell position
-	int child = 0;
-	if (map[y][x + 1]->cost == 1)
+	
+
+	
+	/*
+	
+		要寫walkback 後的開始 (即一開始就find emp 或找到新路)
+																*/
+	/*
+	
+		walk_back可以延續 tree->branch
+											*/
+	while (battery--)
 	{
-			//set child & parent
-			tree.root->child[child] =
-				new Node(map[y][x + 1], tree.root);
+		cur_step++;
+		//cout << "total branch : " << tree.total_branch << endl;
 
-			// set branch number
-			tree.root->child[child]->branch.push_back(child + 1);
-
-			// set cell branch_visit
-			tree.root->child[child]->cel->visited_branches.insert(child + 1);
-
-			//set same level vector
-			tree.leaves.push_back(tree.root->child[child++]);
-
-			tree.cur_branch++;
-			tree.total_branch++;
-	}
-	if (map[y - 1][x]->cost == 1)
-	{
-		//set child & parent
-		tree.root->child[child] =
-			new Node(map[y - 1][x], tree.root);
-
-		// set branch number
-		tree.root->child[child]->branch.push_back(child + 1);
-
-		// set cell branch_visit
-		tree.root->child[child]->cel->visited_branches.insert(child + 1);
-
-		//set same level vector
-		tree.leaves.push_back(tree.root->child[child++]);
-
-		tree.cur_branch++ ;
-		tree.total_branch++;
-	}
-	if (map[y][x - 1]->cost == 1)
-	{
-		//set child & parent
-		tree.root->child[child] =
-			new Node(map[y][x - 1], tree.root);
-
-		// set branch number
-		tree.root->child[child]->branch.push_back(child + 1);
-
-		// set cell branch_visit
-		tree.root->child[child]->cel->visited_branches.insert(child + 1);
-
-		//set same level vector
-		tree.leaves.push_back(tree.root->child[child++]);
-
-		tree.cur_branch++;
-		tree.total_branch++;
-	}
-	if (map[y + 1][x]->cost == 1)
-	{
-		//set child & parent
-		tree.root->child[child] =
-			new Node(map[y + 1][x], tree.root);
-
-		// set branch number
-		tree.root->child[child]->branch.push_back(child + 1);
-
-		// set cell branch_visit
-		tree.root->child[child]->cel->visited_branches.insert(child + 1);
-
-		//set same level vector
-		tree.leaves.push_back(tree.root->child[child++]);
-
-		tree.cur_branch++;
-		tree.total_branch++;
-	}
-
-
-	while (flag--)
-	{
-		bool max_max_cost_is_zero = true;
-		bool next_is_home = false;
+		int  max_max_cost = 0;
 		int new_branch = 0;
-		
+
+		vector<Node*> new_leaves;
 
 		// set node cost and check whether max_max = 0
 		for (int i = 0; i < tree.cur_branch; i++)
 		{
 			set_node_cost(tree.leaves[i]);
 			set_node_max_cost(tree.leaves[i]);
-
+			
+			max_max_cost = MAX(max_max_cost, tree.leaves[i]->max_cost);
+			/*
 			cout << "i: " << i << "  tree.leaves[i].loc: " << tree.leaves[i]->cel->loc
 				<< " max: " << tree.leaves[i]->max_cost << endl;
 
@@ -202,18 +146,22 @@ void Floor::walk() {
 				cout << tree.leaves[i]->branch[j] << " ";
 			cout << endl;
 			cout << "right cell set: ";
+			if(walkable(x + 1, y))
 			for (auto j = map[tree.leaves[i]->cel->loc.y][tree.leaves[i]->cel->loc.x + 1]->visited_branches.begin(); j != map[tree.leaves[i]->cel->loc.y][tree.leaves[i]->cel->loc.x + 1]->visited_branches.end(); j++)
 				cout << *j << " ";
 			cout << endl;
 			cout << "up cell set: ";
+			if(walkable(x, y - 1))
 			for (auto j = map[tree.leaves[i]->cel->loc.y - 1][tree.leaves[i]->cel->loc.x]->visited_branches.begin(); j != map[tree.leaves[i]->cel->loc.y - 1][tree.leaves[i]->cel->loc.x]->visited_branches.end(); j++)
 				cout << *j << " "; 
 			cout << endl;
 			cout << "left cell set: ";
+			if(walkable(x - 1, y))
 			for (auto j = map[tree.leaves[i]->cel->loc.y][tree.leaves[i]->cel->loc.x - 1]->visited_branches.begin(); j != map[tree.leaves[i]->cel->loc.y][tree.leaves[i]->cel->loc.x - 1]->visited_branches.end(); j++)
 				cout << *j << " "; 
 			cout << endl;
 			cout << "down cell set: ";
+			if(walkable(x, y + 1))
 			for (auto j = map[tree.leaves[i]->cel->loc.y + 1][tree.leaves[i]->cel->loc.x]->visited_branches.begin(); j != map[tree.leaves[i]->cel->loc.y + 1][tree.leaves[i]->cel->loc.x]->visited_branches.end(); j++)
 				cout << *j << " ";
 
@@ -223,168 +171,193 @@ void Floor::walk() {
 				cout << cur->cel->loc << " ";
 
 			cout << endl << endl;
+			*/
 
-			if (tree.leaves[i]->max_cost > 0)
-				max_max_cost_is_zero = false;
 		}
 		
 
 
 		// !!!!!要處理同高度 有人到home 有沒結束在其他地方的情況(max_max都是0)
-		if (max_max_cost_is_zero) {
-			
+		// !!!!!要處理"只取最短的 go to emp" 以減少branch
+		if (max_max_cost == 0) {
+
 			bool go_out = false;
+
+			int* steps = new int[tree.cur_branch];
+
+			emp_min_step = 1000000;
 
 			for (int i = 0; i < tree.cur_branch; i++) {
 							// path from leaves to emp node
+				
+
 				Node** n = find_emp_cell(tree.leaves[i]);
+				
 				// 全都走過了
 				if (n == nullptr) {
 					cout << "QQQQQQQQQQQQQQQQQQQQ!" << endl;
-
+					finalNode = tree.leaves[i];
+					finish = true;
 					//go home (A*)
 					go_out = true;
 					break;
 				}
+
+				steps[i] = n[2]->max_cost;
+				if (steps[i] < emp_min_step)emp_min_step = steps[i];
+
 
 				tree.leaves[i]->child[0] = n[0];
 				n[0]->parent = tree.leaves[i];
 				n[1]->branch = tree.leaves[i]->branch;
 				tree.leaves[i] = n[1];
 
-				// set cell branch_visit
-				tree.leaves[i]->cel->visited_branches.insert(tree.leaves[i]->branch.back());
-				new_branch++;
+
+
 				//cout << "visited_branches: " << tree.leaves[i]->cel->visited_branches[0]<<endl;
 			}
 			if (go_out)break;
+
+			for (int i = 0; i < tree.cur_branch; i++) {
+
+				if (steps[i] == emp_min_step) {
+
+					new_leaves.push_back(tree.leaves[i]);
+					// set cell branch_visit
+					tree.leaves[i]->cel->visited_branches.insert(tree.leaves[i]->branch.back());
+					new_branch++;
+				}
+			}
+			
 		}
 		else {
 
-			cout << endl;
-			cout<< "total_branch : " << tree.total_branch << endl << endl;
+			//cout << endl;
+			//cout<< "total_branch : " << tree.total_branch << endl << endl;
 
-			vector<Node*> new_leaves;
+			
 			for (int i = 0 ; i < tree.cur_branch; i++)
 			{
-				int x = tree.leaves[i]->cel->loc.x;
-				int y = tree.leaves[i]->cel->loc.y;		// current cell position
+				if (tree.leaves[i]->max_cost == max_max_cost) {
+					int x = tree.leaves[i]->cel->loc.x;
+					int y = tree.leaves[i]->cel->loc.y;		// current cell position
 
-				int child = 0;
-				bool go_branch = false;
-				vector<int> master_branch = tree.leaves[i]->branch;
-				
-				if ((tree.leaves[i]->cost[0] == tree.leaves[i]->cost[1] && tree.leaves[i]->cost[1] == tree.leaves[i]->max_cost) ||
-					(tree.leaves[i]->cost[0] == tree.leaves[i]->cost[2] && tree.leaves[i]->cost[2] == tree.leaves[i]->max_cost) ||
-					(tree.leaves[i]->cost[0] == tree.leaves[i]->cost[3] && tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost) ||
-					(tree.leaves[i]->cost[1] == tree.leaves[i]->cost[2] && tree.leaves[i]->cost[2] == tree.leaves[i]->max_cost) ||
-					(tree.leaves[i]->cost[1] == tree.leaves[i]->cost[3] && tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost) ||
-					(tree.leaves[i]->cost[2] == tree.leaves[i]->cost[3] && tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost))
-				{
-					go_branch = true;
-				}
+					int child = 0;
+					bool go_branch = false;
 
-				if (tree.leaves[i]->cost[0] == tree.leaves[i]->max_cost && tree.leaves[i]->max_cost != 0)
-				{// one of max_grid
-				
-					//set child & parent
-					tree.leaves[i]->child[child] = 
-						new Node(map[y][x + 1], tree.leaves[i]);
-					
-					// set branch number
-					tree.leaves[i]->child[child]->branch = master_branch;
-					if (go_branch) {
-						tree.total_branch++;
-						tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
-						
-					}
-					// set cell branch_visit
-					tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
-					
-					//set same level vector
-					new_leaves.push_back(tree.leaves[i]->child[child++]);
-
-					new_branch++;
-				}
-
-				if (tree.leaves[i]->cost[1] == tree.leaves[i]->max_cost && tree.leaves[i]->max_cost != 0)
-				{// one of max_grid
-				
-					//set child & parent
-					tree.leaves[i]->child[child] =
-						new Node(map[y - 1][x], tree.leaves[i]);
-
-					// set branch number
-					tree.leaves[i]->child[child]->branch = master_branch;
-					if (go_branch) {
-						tree.total_branch++;
-						tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
-						
+					if ((tree.leaves[i]->cost[0] == tree.leaves[i]->cost[1] && tree.leaves[i]->cost[1] == tree.leaves[i]->max_cost) ||
+						(tree.leaves[i]->cost[0] == tree.leaves[i]->cost[2] && tree.leaves[i]->cost[2] == tree.leaves[i]->max_cost) ||
+						(tree.leaves[i]->cost[0] == tree.leaves[i]->cost[3] && tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost) ||
+						(tree.leaves[i]->cost[1] == tree.leaves[i]->cost[2] && tree.leaves[i]->cost[2] == tree.leaves[i]->max_cost) ||
+						(tree.leaves[i]->cost[1] == tree.leaves[i]->cost[3] && tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost) ||
+						(tree.leaves[i]->cost[2] == tree.leaves[i]->cost[3] && tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost))
+					{
+						go_branch = true;
 					}
 
-					// set cell branch_visit
-					tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
+					if (tree.leaves[i]->cost[0] == max_max_cost)
+					{// one of max_grid
 
-					//set same level vector
-					new_leaves.push_back(tree.leaves[i]->child[child++]);
+						//set child & parent
+						tree.leaves[i]->child[child] =
+							new Node(map[y][x + 1], tree.leaves[i]);
 
-					new_branch++;
-				}
+						// set branch number
+						tree.leaves[i]->child[child]->branch = tree.leaves[i]->branch;;
+						if (go_branch) {
+							tree.total_branch++;
+							tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
 
-				if (tree.leaves[i]->cost[2] == tree.leaves[i]->max_cost && tree.leaves[i]->max_cost != 0)
-				{/// one of max_grid
-				
-					//set child & parent
-					tree.leaves[i]->child[child] =
-						new Node(map[y][x - 1], tree.leaves[i]);
+						}
+						// set cell branch_visit
+						tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
 
-					// set branch number
-					tree.leaves[i]->child[child]->branch = master_branch;
-					if (go_branch) {
-						tree.total_branch++;
-						tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
-						
+						//set same level vector
+						new_leaves.push_back(tree.leaves[i]->child[child++]);
+
+						new_branch++;
 					}
 
-					// set cell branch_visit
-					tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
+					if (tree.leaves[i]->cost[1] == max_max_cost)
+					{// one of max_grid
 
-					//set same level vector
-					new_leaves.push_back(tree.leaves[i]->child[child++]);
+						//set child & parent
+						tree.leaves[i]->child[child] =
+							new Node(map[y - 1][x], tree.leaves[i]);
 
-					new_branch++;
-				}
+						// set branch number
+						tree.leaves[i]->child[child]->branch = tree.leaves[i]->branch;;
+						if (go_branch) {
+							tree.total_branch++;
+							tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
 
-				if (tree.leaves[i]->cost[3] == tree.leaves[i]->max_cost && tree.leaves[i]->max_cost != 0)
-				{// one of max_grid
-				
-					//set child & parent
-					tree.leaves[i]->child[child] =
-						new Node(map[y + 1][x], tree.leaves[i]);
+						}
 
-					// set branch number
-					tree.leaves[i]->child[child]->branch = master_branch;
-					if (go_branch) {
-						tree.total_branch++;
-						tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
-						
+						// set cell branch_visit
+						tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
+
+						//set same level vector
+						new_leaves.push_back(tree.leaves[i]->child[child++]);
+
+						new_branch++;
 					}
 
-					// set cell branch_visit
-					tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
+					if (tree.leaves[i]->cost[2] == max_max_cost)
+					{/// one of max_grid
 
-					//set same level vector
-					new_leaves.push_back(tree.leaves[i]->child[child++]);
+						//set child & parent
+						tree.leaves[i]->child[child] =
+							new Node(map[y][x - 1], tree.leaves[i]);
 
-					new_branch++;
+						// set branch number
+						tree.leaves[i]->child[child]->branch = tree.leaves[i]->branch;;
+						if (go_branch) {
+							tree.total_branch++;
+							tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
+
+						}
+
+						// set cell branch_visit
+						tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
+
+						//set same level vector
+						new_leaves.push_back(tree.leaves[i]->child[child++]);
+
+						new_branch++;
+					}
+
+					if (tree.leaves[i]->cost[3] == max_max_cost)
+					{// one of max_grid
+
+						//set child & parent
+						tree.leaves[i]->child[child] =
+							new Node(map[y + 1][x], tree.leaves[i]);
+
+						// set branch number
+						tree.leaves[i]->child[child]->branch = tree.leaves[i]->branch;;
+						if (go_branch) {
+							tree.total_branch++;
+							tree.leaves[i]->child[child]->branch.push_back(tree.total_branch);
+
+						}
+
+						// set cell branch_visit
+						tree.leaves[i]->child[child]->cel->visited_branches.insert(tree.leaves[i]->child[child]->branch.back());
+
+						//set same level vector
+						new_leaves.push_back(tree.leaves[i]->child[child++]);
+
+						new_branch++;
+					}
+
 				}
-
-
 			}
 			
-			tree.leaves = new_leaves;
+			
 			
 		}
+		
+		tree.leaves = new_leaves;
 		tree.cur_branch = new_branch;
 		
 
@@ -465,6 +438,8 @@ void Floor::distance_evaluation(cell* root) {
 
 }
 
+
+//[0] == head ; [1] = rear ; [2] = steps
 Node** Floor::find_emp_cell(Node* root) {
 	
 	int root_x = root->cel->loc.x;
@@ -476,12 +451,23 @@ Node** Floor::find_emp_cell(Node* root) {
 	queue<Node*> q;
 	q.push(fake_root);
 
-	bool fake_map[1000][1000];
+
+
+	bool** fake_map = new bool*[row];
+	for (int i = 0; i < row; i++) {
+		fake_map[i] = new bool[col];
+		for (int j = 0; j < col; j++) {
+			fake_map[i][j] = false;
+		}
+	}
 	fake_map[root_y][root_x] = true;
 
+
+	int step = 0;
 	bool found = false;
 	while (!q.empty())
 	{
+		step++;
 		int child = 0;
 		tmp_node = q.front();
 		int x = tmp_node->cel->loc.x;
@@ -572,11 +558,13 @@ Node** Floor::find_emp_cell(Node* root) {
 	
 	//代表有找到emp
 	if (found) {
-		cout << "found: " << tmp_node ->cel->loc<< endl;
+		//cout << "found: " << tmp_node ->cel->loc<< endl;
 		//delete 除了 child[0]的branch
-		Node** n = new Node*[2];
+		Node** n = new Node*[3];
 		n[1] = tmp_node;
 		n[0] = reverse_tree(tmp_node)->child[0];
+		n[2] = new Node();
+		n[2]->max_cost = step;
 		return n;
 	}
 	else {
