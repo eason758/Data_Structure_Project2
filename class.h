@@ -9,6 +9,7 @@
 #include <vector>
 #include <set>
 #include <queue>
+#include <stack>
 #include <time.h>
 double START;
 double PROCESS_START;
@@ -105,8 +106,9 @@ class Floor {
 	int row;
 	int col;
 	int battery;
-	int min_step;
+	int emp_min_step;
 	int cur_step;
+	bool finish;
 	Node * finalNode;
 	vector<cell*> unclean;
 	cell* home;
@@ -136,7 +138,7 @@ private:
 	void distance_evaluation(cell* root);
 	Node** find_emp_cell(Node* root);
 	void walk();
-
+	void walk_back();
 
 
 	void set_node_max_cost(Node* node);
