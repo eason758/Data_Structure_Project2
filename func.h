@@ -6,17 +6,18 @@
 #include "class.h"
 
 
-void Floor::set_node_max_cost(Node* node) {
+void Floor::set_node_max_cost(Node* node,bool consider_dist) {
 
 	int max = 0;
 	int x = node->cel->loc.x;
 	int y = node->cel->loc.y;
 
+
 	max = MAX(max, node->cost[0]);
 	max = MAX(max, node->cost[1]);
 	max = MAX(max, node->cost[2]);
 	max = MAX(max, node->cost[3]);
-	
+
 	node->max_cost =  max;
 }
 
@@ -37,24 +38,42 @@ bool Floor::visited(Node* node, int x, int y) {
 	return false;
 }
 
-void Floor::set_node_cost(Node* node) {
+void Floor::set_node_cost(Node* node,bool consider_dist) {
 
 	int x = node->cel->loc.x;
 	int y = node->cel->loc.y;
 	
-	// is it visited?
-	if (visited(node, 1, 0)) node->cost[0] = 0;
-	else if(walkable(x + 1, y))node->cost[0] = map[y][x + 1]->cost;
+	if (consider_dist) {
+		if (map[y][x + 1]->dist > left_step()) node->cost[0] = -1;
+		else if (visited(node, 1, 0)) node->cost[0] = 0;
+		else if (walkable(x + 1, y))node->cost[0] = map[y][x + 1]->cost;
 
-	if (visited(node, 0, -1)) node->cost[1] = 0;
-	else if (walkable(x, y - 1))node->cost[1] = map[y - 1][x]->cost;
+		if (map[y - 1][x]->dist > left_step()) node->cost[1] = -1;
+		else if (visited(node, 0, -1)) node->cost[1] = 0;
+		else if (walkable(x, y - 1))node->cost[1] = map[y - 1][x]->cost;
 
-	if (visited(node, -1, 0)) node->cost[2] = 0;
-	else if (walkable(x - 1, y))node->cost[2] = map[y][x - 1]->cost;
+		if (map[y][x - 1]->dist > left_step()) node->cost[2] = -1;
+		else if (visited(node, -1, 0)) node->cost[2] = 0;
+		else if (walkable(x - 1, y))node->cost[2] = map[y][x - 1]->cost;
 
-	if (visited(node, 0, 1)) node->cost[3] = 0;
-	else if (walkable(x, y + 1))node->cost[3] = map[y + 1][x]->cost;
+		if (map[y + 1][x]->dist > left_step()) node->cost[3] = -1;
+		else if (visited(node, 0, 1)) node->cost[3] = 0;
+		else if (walkable(x, y + 1))node->cost[3] = map[y + 1][x]->cost;
+	}
+	else {
+		// is it visited?
+		if (visited(node, 1, 0)) node->cost[0] = 0;
+		else if (walkable(x + 1, y))node->cost[0] = map[y][x + 1]->cost;
 
+		if (visited(node, 0, -1)) node->cost[1] = 0;
+		else if (walkable(x, y - 1))node->cost[1] = map[y - 1][x]->cost;
+
+		if (visited(node, -1, 0)) node->cost[2] = 0;
+		else if (walkable(x - 1, y))node->cost[2] = map[y][x - 1]->cost;
+
+		if (visited(node, 0, 1)) node->cost[3] = 0;
+		else if (walkable(x, y + 1))node->cost[3] = map[y + 1][x]->cost;
+	}
 }
 
 
