@@ -40,13 +40,15 @@ struct cell {
 	coor loc;
 	set<int> visited_branches;	
 	bool evaluated;
+	bool disted;
 	enum attribute attr;
 	int cost;
+	int dist;
 
 	cell(coor _loc = coor(0, 0), set<int> v_b = set<int>{}, attribute _a = ROAD, int _cost = 0) :
-		loc(_loc), visited_branches(v_b), attr(_a), cost(_cost),evaluated(false){}
+		loc(_loc), visited_branches(v_b), attr(_a), cost(_cost),evaluated(false),disted(false){}
 	cell(coor _loc, attribute _a, int _cost = 0) :
-		loc(_loc), attr(_a), cost(_cost), evaluated(false) {};
+		loc(_loc), attr(_a), cost(_cost), evaluated(false), disted(false) {};
 
 
 };
@@ -109,6 +111,7 @@ class Floor {
 	int emp_min_step;
 	int cur_step;
 	bool finish;
+
 	Node * finalNode;
 	vector<cell*> unclean;
 	cell* home;
@@ -135,14 +138,15 @@ public:
 
 private:
 
-	void distance_evaluation(cell* root);
+	void evaluate(cell* root);
 	Node** find_emp_cell(Node* root);
 	void walk();
 	void walk_back();
+	void go_home(Node* cur);
 
 
-	void set_node_max_cost(Node* node);
-	void set_node_cost(Node* node);
+	void set_node_max_cost(Node* node,bool consider_dist);
+	void set_node_cost(Node* node,bool consider_dist);
 	bool visited(Node* node, int x, int y);
 
 	bool walkable(int x, int y);
