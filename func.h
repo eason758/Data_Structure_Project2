@@ -44,16 +44,16 @@ void Floor::set_node_cost(Node* node) {
 	
 	// is it visited?
 	if (visited(node, 1, 0)) node->cost[0] = 0;
-	else node->cost[0] = map[y][x + 1]->cost;
+	else if(walkable(x + 1, y))node->cost[0] = map[y][x + 1]->cost;
 
 	if (visited(node, 0, -1)) node->cost[1] = 0;
-	else node->cost[1] = map[y - 1][x]->cost;
+	else if (walkable(x, y - 1))node->cost[1] = map[y - 1][x]->cost;
 
 	if (visited(node, -1, 0)) node->cost[2] = 0;
-	else node->cost[2] = map[y][x - 1]->cost;
+	else if (walkable(x - 1, y))node->cost[2] = map[y][x - 1]->cost;
 
 	if (visited(node, 0, 1)) node->cost[3] = 0;
-	else node->cost[3] = map[y + 1][x]->cost;
+	else if (walkable(x, y + 1))node->cost[3] = map[y + 1][x]->cost;
 
 }
 
@@ -118,12 +118,23 @@ void Floor::debug() {
 	cout << endl;							// unclean
 
 
-	cout << "-----------------------------------------------------" << endl;
-	for (Node* cur = tree.root; cur != nullptr; cur = cur->child[0]) {
-		cout << cur->cel->loc <<" ";
+	stack<Node*> s;
+	// path
+	cout << "----------------------------PATH---------------------" << endl;
+	int step = 0;
+	for (Node* cur = finalNode; cur != nullptr; cur = cur->parent) {
+		s.push(cur);
+		step++;
+	}
+
+	while (!s.empty()) {
+		cout << s.top()->cel->loc <<" ";
+		s.pop();
 	}
 	cout << endl;
-	cout << "-----------------------------------------------------" << endl;
+	cout << "There are " << step << " steps in the path" << endl;
+	cout << "and there are " << unclean.size() << " unclean in the map" << endl;
+	cout << "----------------------------PATH---------------------" << endl;
 
 	cout << "home : " << (*home).loc << endl;
 
