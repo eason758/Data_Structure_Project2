@@ -51,8 +51,9 @@ struct cell {
 		loc(_loc), attr(_a), cost(_cost), evaluated(false), disted(false) {};
 
 
-};
 
+
+};
 
 
 
@@ -74,8 +75,14 @@ struct Node {
 		child[3] = nullptr;
 
 	}
+	
 
 };
+struct cmp
+{
+	bool operator() (Node* lhs, Node* rhs) { return lhs->cel->dist > rhs->cel->dist; }
+};
+
 Node* reverse_tree(Node* cur);
 
 class OneTripTree {
@@ -140,9 +147,10 @@ private:
 
 	void evaluate(cell* root);
 	Node** find_emp_cell(Node* root);
+	void first_step();
 	void walk();
 	void walk_back();
-	void go_home(Node* cur);
+	Node* go_home(Node* cur);
 
 
 	void set_node_max_cost(Node* node,bool consider_dist);
