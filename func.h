@@ -44,21 +44,45 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 	int y = node->cel->loc.y;
 	
 	if (consider_dist) {
-		if (map[y][x + 1]->dist > left_step()) node->cost[0] = -1;
-		else if (visited(node, 1, 0)) node->cost[0] = 0;
-		else if (walkable(x + 1, y))node->cost[0] = map[y][x + 1]->cost;
 
-		if (map[y - 1][x]->dist > left_step()) node->cost[1] = -1;
-		else if (visited(node, 0, -1)) node->cost[1] = 0;
-		else if (walkable(x, y - 1))node->cost[1] = map[y - 1][x]->cost;
+		if (walkable(x + 1, y)) {
+			if (left_step() == 0 && map[y][x + 1] == home) {
+				node->cost[0] = 10000;
+				cur_step = 0;
+			}
+			else if (map[y][x + 1]->dist > left_step()) node->cost[0] = -1;
+			else if (visited(node, 1, 0)) node->cost[0] = 0;
+			else node->cost[0] = map[y][x + 1]->cost;
+		}
+		if (walkable(x, y - 1)) {
+			if (left_step() == 0 && map[y - 1][x] == home) {
+				node->cost[1] = 10000;
+				cur_step = 0;
+			}
+			else if (map[y - 1][x]->dist > left_step()) node->cost[1] = -1;
+			else if (visited(node, 0, -1)) node->cost[1] = 0;
+			else node->cost[1] = map[y - 1][x]->cost;
+		}
 
-		if (map[y][x - 1]->dist > left_step()) node->cost[2] = -1;
-		else if (visited(node, -1, 0)) node->cost[2] = 0;
-		else if (walkable(x - 1, y))node->cost[2] = map[y][x - 1]->cost;
+		if (walkable(x - 1, y)) {
+			if (left_step() == 0 && map[y][x - 1] == home) {
+				node->cost[2] = 10000;
+				cur_step = 0;
+			}
+			else if (map[y][x - 1]->dist > left_step()) node->cost[2] = -1;
+			else if (visited(node, -1, 0)) node->cost[2] = 0;
+			else node->cost[2] = map[y][x - 1]->cost;
+		}
 
-		if (map[y + 1][x]->dist > left_step()) node->cost[3] = -1;
-		else if (visited(node, 0, 1)) node->cost[3] = 0;
-		else if (walkable(x, y + 1))node->cost[3] = map[y + 1][x]->cost;
+		if (walkable(x, y + 1)) {
+			if (left_step() == 0 && map[y + 1][x] == home) {
+				node->cost[3] = 10000;
+				cur_step = 0;
+			}
+			else if (map[y + 1][x]->dist > left_step()) node->cost[3] = -1;
+			else if (visited(node, 0, 1)) node->cost[3] = 0;
+			else node->cost[3] = map[y + 1][x]->cost;
+		}
 	}
 	else {
 		// is it visited?
