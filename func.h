@@ -21,22 +21,7 @@ void Floor::set_node_max_cost(Node* node,bool consider_dist) {
 	node->max_cost =  max;
 }
 
-bool Floor::visited(Node* node, int x, int y) {
 
-	int n_x = node->cel->loc.x;
-	int n_y = node->cel->loc.y;
-
-	if (walkable(n_x + x, n_y + y)) {
-
-		for (vector<int>::iterator it = node->branch.begin(); it != node->branch.end(); it++) {
-			if (map[n_y + y][n_x + x]->visited_branches.count(*it)) {
-				return true;
-			}
-		}
-
-	}
-	return false;
-}
 
 void Floor::set_node_cost(Node* node,bool consider_dist) {
 
@@ -50,18 +35,26 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 				node->cost[0] = 10000;
 				cur_step = 0;
 			}
-			else if (map[y][x + 1]->dist > left_step()) node->cost[0] = -1;
-			else if (visited(node, 1, 0)) node->cost[0] = 0;
+			else if (map[y][x + 1]->dist > left_step() + 1) node->cost[0] = -1;
+			else if (map[y][x + 1]->visited == 1) node->cost[0] = 0;
 			else node->cost[0] = map[y][x + 1]->cost;
+		}
+		else
+		{
+			node->cost[0] = -1;
 		}
 		if (walkable(x, y - 1)) {
 			if (left_step() == 0 && map[y - 1][x] == home) {
 				node->cost[1] = 10000;
 				cur_step = 0;
 			}
-			else if (map[y - 1][x]->dist > left_step()) node->cost[1] = -1;
-			else if (visited(node, 0, -1)) node->cost[1] = 0;
+			else if (map[y - 1][x]->dist > left_step() + 1) node->cost[1] = -1;
+			else if (map[y - 1][x]->visited == 1) node->cost[1] = 0;
 			else node->cost[1] = map[y - 1][x]->cost;
+		}
+		else
+		{
+			node->cost[1] = -1;
 		}
 
 		if (walkable(x - 1, y)) {
@@ -69,9 +62,13 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 				node->cost[2] = 10000;
 				cur_step = 0;
 			}
-			else if (map[y][x - 1]->dist > left_step()) node->cost[2] = -1;
-			else if (visited(node, -1, 0)) node->cost[2] = 0;
+			else if (map[y][x - 1]->dist > left_step() + 1) node->cost[2] = -1;
+			else if (map[y][x - 1]->visited == 1) node->cost[2] = 0;
 			else node->cost[2] = map[y][x - 1]->cost;
+		}
+		else
+		{
+			node->cost[2] = -1;
 		}
 
 		if (walkable(x, y + 1)) {
@@ -79,24 +76,39 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 				node->cost[3] = 10000;
 				cur_step = 0;
 			}
-			else if (map[y + 1][x]->dist > left_step()) node->cost[3] = -1;
-			else if (visited(node, 0, 1)) node->cost[3] = 0;
+			else if (map[y + 1][x]->dist > left_step() + 1) node->cost[3] = -1;
+			else if (map[y + 1][x]->visited == 1) node->cost[3] = 0;
 			else node->cost[3] = map[y + 1][x]->cost;
+		}
+		else
+		{
+			node->cost[3] = -1;
 		}
 	}
 	else {
-		// is it visited?
-		if (visited(node, 1, 0)) node->cost[0] = 0;
-		else if (walkable(x + 1, y))node->cost[0] = map[y][x + 1]->cost;
+		if (walkable(x + 1, y)) {
+			if (map[y][x + 1]->visited == 1) node->cost[0] = 0;
+			else node->cost[0] = map[y][x + 1]->cost;
+		}
+		else node->cost[0] = -1;
 
-		if (visited(node, 0, -1)) node->cost[1] = 0;
-		else if (walkable(x, y - 1))node->cost[1] = map[y - 1][x]->cost;
+		if (walkable(x, y - 1)) {
+			if (map[y - 1][x]->visited == 1) node->cost[1] = 0;
+			else node->cost[1] = map[y - 1][x]->cost;
+		}
+		else node->cost[1] = -1;
 
-		if (visited(node, -1, 0)) node->cost[2] = 0;
-		else if (walkable(x - 1, y))node->cost[2] = map[y][x - 1]->cost;
+		if (walkable(x - 1, y)) {
+			if (map[y][x - 1]->visited == 1) node->cost[2] = 0;
+			else node->cost[2] = map[y][x - 1]->cost;
+		}
+		else node->cost[2] = -1;
 
-		if (visited(node, 0, 1)) node->cost[3] = 0;
-		else if (walkable(x, y + 1))node->cost[3] = map[y + 1][x]->cost;
+		if (walkable(x, y + 1)) {
+			if (map[y + 1][x]->visited == 1) node->cost[3] = 0;
+			else node->cost[3] = map[y + 1][x]->cost;
+		}
+		else node->cost[3] = -1;
 	}
 }
 
@@ -119,25 +131,25 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 
 
 
-Node* reverse_tree(Node* cur) {
+Node* Floor::reverse_tree(Node* cur) {
+	goto_step = 0;
+	int cur_dist = cur->cel->dist;
 	if (cur != nullptr ) {
 		for (Node* tmp = cur->parent; tmp != nullptr; tmp = tmp->parent) {
-			tmp->child[0] = cur;
+			tmp->child = cur;
 			cur = tmp;
+			goto_step++;
+			
 		}
 	}
+	if (goto_step + cur_dist > left_step()) return nullptr;
 	return cur;
 }
 
 
 void Floor::debug() {
 
-	cout << endl;
 
-	cout << "total branch: "<<tree.total_branch << endl;
-	cout << "branch : "<< tree.cur_branch << endl;
-
-	cout << endl;
 
 	for (int i = 0; i < row; i++) {
 		for (int j = 0; j < col; j++) {
@@ -155,28 +167,31 @@ void Floor::debug() {
 	}
 	cout << endl;							// cost
 
-	for (vector<cell*>::iterator it = unclean.begin(); it != unclean.end(); it++) 
-		cout << (**it).loc << " ";
+	for (int i = 0; i < row; i++) {
+		for (int j = 0; j < col; j++) {
+			cout << map[i][j]->visited;
+		}
+		cout << endl;
+	}
+	cout << endl;							// visited
 
-	cout << endl;							// unclean
+
 
 
 	stack<Node*> s;
 	// path
 	cout << "----------------------------PATH---------------------" << endl;
 	int step = 0;
-	for (Node* cur = finalNode; cur != nullptr; cur = cur->parent) {
-		s.push(cur);
-		step++;
-	}
 
-	while (!s.empty()) {
-		cout << s.top()->cel->loc <<" ";
-		s.pop();
+	Node* cur = tree.root;
+	while (cur != nullptr) {
+		cout << cur->cel->loc<<" ";
+		cur = cur->child;
+		step++;
 	}
 	cout << endl;
 	cout << "There are " << step << " steps in the path" << endl;
-	cout << "and there are " << unclean.size() << " unclean in the map" << endl;
+	cout << "and there are " << init_unclean_size << " unclean in the map" << endl;
 	cout << "----------------------------PATH---------------------" << endl;
 
 	cout << "home : " << (*home).loc << endl;
