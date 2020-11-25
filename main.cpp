@@ -66,7 +66,7 @@ void run(Floor& floor) {
 
 void output(Floor& floor) {
 
-	cout << floor.path.size()-1 << endl;
+	o << floor.path.size()-1 << endl;
 
 	for(unsigned int i = 0 ; i < floor.path.size() ; i++)
 		o << floor.path[i].y<< " "<< floor.path[i].x << endl;
