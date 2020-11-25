@@ -17,7 +17,7 @@ void Floor::init(int r, int c, int b) {
 }
 
 
-void Floor::clear(){
+void Floor::clear() {
 
 	rear = new Node(home);
 
@@ -29,13 +29,14 @@ void Floor::clear(){
 
 	cur_step = 0;
 
-	int i = 0;
-	do
-	{
-		walk();
-		if(!finish)
-			walk_back();
-	} while (!finish);
+	if (unclean_size != 0){
+		do
+		{
+			walk();
+			if (!finish)
+				walk_back();
+		} while (!finish);
+	}
 }
 
 
