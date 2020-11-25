@@ -21,8 +21,6 @@ void Floor::set_node_max_cost(Node* node,bool consider_dist) {
 	node->max_cost =  max;
 }
 
-
-
 void Floor::set_node_cost(Node* node,bool consider_dist) {
 
 	int x = node->cel->loc.x;
@@ -33,6 +31,7 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 		if (walkable(x + 1, y)) {
 			if (left_step() == 0 && map[y][x + 1] == home) {
 				node->cost[0] = 10000;
+				unclean_size++;
 				cur_step = 0;
 			}
 			else if (map[y][x + 1]->dist > left_step() + 1) node->cost[0] = -1;
@@ -43,9 +42,11 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 		{
 			node->cost[0] = -1;
 		}
+		
 		if (walkable(x, y - 1)) {
 			if (left_step() == 0 && map[y - 1][x] == home) {
 				node->cost[1] = 10000;
+				unclean_size++;
 				cur_step = 0;
 			}
 			else if (map[y - 1][x]->dist > left_step() + 1) node->cost[1] = -1;
@@ -60,6 +61,7 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 		if (walkable(x - 1, y)) {
 			if (left_step() == 0 && map[y][x - 1] == home) {
 				node->cost[2] = 10000;
+				unclean_size++;
 				cur_step = 0;
 			}
 			else if (map[y][x - 1]->dist > left_step() + 1) node->cost[2] = -1;
@@ -74,6 +76,7 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 		if (walkable(x, y + 1)) {
 			if (left_step() == 0 && map[y + 1][x] == home) {
 				node->cost[3] = 10000;
+				unclean_size++;
 				cur_step = 0;
 			}
 			else if (map[y + 1][x]->dist > left_step() + 1) node->cost[3] = -1;
@@ -120,98 +123,55 @@ void Floor::set_node_cost(Node* node,bool consider_dist) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-Node* Floor::reverse_tree(Node* cur) {
-	goto_step = 0;
-	int cur_dist = cur->cel->dist;
-	if (cur != nullptr ) {
-		for (Node* tmp = cur->parent; tmp != nullptr; tmp = tmp->parent) {
-			tmp->child = cur;
-			cur = tmp;
-			goto_step++;
-			
+void myheap::push(Node* node) {
+	//cout << "push" << endl;
+	int cur_index = heap.size();
+	heap.push_back(node);
+	if (cur_index != 0) {
+		while (smaller_than(heap[cur_index], heap[(cur_index + 1) / 2 - 1])) {
+			Node* tmp = heap[(cur_index + 1) / 2 - 1];
+			heap[(cur_index + 1) / 2 - 1] = heap[cur_index];
+			heap[cur_index] = tmp;
+			cur_index = (cur_index + 1) / 2 - 1;
+			if (cur_index == 0) break;
 		}
 	}
-	if (goto_step + cur_dist > left_step()) return nullptr;
-	return cur;
+	//cout << "push end" << endl;
+}
+void myheap::pop() {
+	//cout << "pop" << endl;
+	if (heap.empty()) {
+		cout << "heap empty" << endl;
+		exit(1);
+	}
+	else if (heap.size() == 1) heap.pop_back();
+	else {
+		int cur_index = 0;
+		heap[0] = heap.back();
+		heap.pop_back();
+		int min_index;
+		while (1) {
+			if (int(heap.size()) < (cur_index + 1) * 2) break;
+			else if (int(heap.size()) < (cur_index + 1) * 2 + 1) min_index = (cur_index + 1) * 2 - 1;
+			else if (smaller_than(heap[(cur_index + 1) * 2], heap[(cur_index + 1) * 2 - 1])) min_index = (cur_index + 1) * 2;
+			else min_index = (cur_index + 1) * 2 - 1 ;
+			if (smaller_than(heap[min_index], heap[cur_index])) {
+				Node* tmp = heap[min_index];
+				heap[min_index] = heap[cur_index];
+				heap[cur_index] = tmp;
+				cur_index = min_index;
+			}
+			else break;
+		}
+
+	}
+	//cout << "pop end" << endl;
 }
 
-
-void Floor::debug() {
-
-
-
-	for (int i = 0; i < row; i++) {
-		for (int j = 0; j < col; j++) {
-			cout << (*map[i][j]).attr<<" ";
-		}
-		cout << endl;
-	}
-	cout << endl;							// map
-
-	for (int i = 0; i < row; i++) {
-		for (int j = 0; j < col; j++) {
-			cout << map[i][j]->cost << " ";
-		}
-		cout << endl;
-	}
-	cout << endl;							// cost
-
-	for (int i = 0; i < row; i++) {
-		for (int j = 0; j < col; j++) {
-			cout << map[i][j]->visited;
-		}
-		cout << endl;
-	}
-	cout << endl;							// visited
-
-
-
-
-	stack<Node*> s;
-	// path
-	cout << "----------------------------PATH---------------------" << endl;
-	int step = 0;
-
-	Node* cur = tree.root;
-	while (cur != nullptr) {
-		cout << cur->cel->loc<<" ";
-		cur = cur->child;
-		step++;
-	}
-	cout << endl;
-	cout << "There are " << step << " steps in the path" << endl;
-	cout << "and there are " << init_unclean_size << " unclean in the map" << endl;
-	cout << "----------------------------PATH---------------------" << endl;
-
-	cout << "home : " << (*home).loc << endl;
-
-
-	cout << "\n" << endl;
-
+bool myheap::smaller_than(Node* lhs, Node* rhs) {
+	return ((abs(lhs->cel->loc.x - dest.x) + abs(lhs->cel->loc.y - dest.y)) < (abs(rhs->cel->loc.x - dest.x) + abs(rhs->cel->loc.y - dest.y)));
 }
 
-void debug(Floor& floor) {
-
-	cout << "\n" 
-		 << "------------debug------------" << endl;
-
-	floor.debug();
-
-	cout << "\n"
-		<< "------------debug------------" << endl;
-
-}
 
 
 
