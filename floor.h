@@ -5,9 +5,6 @@
 
 #include "class.h"
 
-void debugg(Node* root);
-
-
 #define MAX(a,b) ((a>b) ? a : b ) 
 
 void Floor::init(int r, int c, int b) {
@@ -17,17 +14,12 @@ void Floor::init(int r, int c, int b) {
 	col = c;
 	battery = b;
 
-	init_unclean_size = unclean_size;
-
-	PROCESS_START = clock();
-
 }
 
 
 void Floor::clear(){
 
-	tree.root = new Node(home);
-	tree.leaf = tree.root;
+	rear = new Node(home);
 
 	path.push_back(home->loc);
 
@@ -36,79 +28,43 @@ void Floor::clear(){
 	evaluate(home);
 
 	cur_step = 0;
+
+	int i = 0;
 	do
 	{
 		walk();
 		if(!finish)
 			walk_back();
-		
-		
-		//cout << "--------------------------------------------------------";
-		//debug();
-		//cout << "--------------------------------------------------------";
 	} while (!finish);
-
-
 }
 
 
 void Floor::walk() {
-	//cout << "walk!" << endl;
-
 
 	while (cur_step < battery/2)
 	{
-		/*
-		debugg(tree.root);
-	
-		for (int i = 0; i < row; i++) {
-			for (int j = 0; j < col; j++) {
-				cout << map[i][j]->visited << " ";
-			}
-			cout << endl;
-		}
-		*/
-		
 		cur_step++;
 
-		//cout << "step: " << cur_step << endl;
+		set_node_cost(rear, false);
+		set_node_max_cost(rear, false);
+		
+		if (rear->max_cost == 0) {
 
-		set_node_cost(tree.leaf, false);
-		set_node_max_cost(tree.leaf, false);
-		/*
-		cout << "1 : " << tree.leaf->cost[0] << endl;
-		cout << "2 : " << tree.leaf->cost[1] << endl;
-		cout << "3 : " << tree.leaf->cost[2] << endl;
-		cout << "4 : " << tree.leaf->cost[3] << endl;
-		if (!branchable.empty())
-			cout << "branchable : " << branchable.top()->loc << endl;
-		else cout << "branchable emp" << endl;
-		cout << "max : " << tree.leaf->max_cost << endl;
-		cout << "now: " << tree.leaf->cel->loc << endl;
-		*/
-		int x = tree.leaf->cel->loc.x;
-		int y = tree.leaf->cel->loc.y;
-
-
-		if (tree.leaf->max_cost == 0) {
-			//cout << "bbbbbbbbbbbbbbbbbbb" << endl;
-			//cout << "unclean.size() :" << unclean.size() << endl;
 			// 全都走過了
-			if (unclean_size == 0) {
-				go_home(tree.leaf);
+			if (unclean_size <= 0) {
+				stack<coor> tmp_stack = stack_go_home(rear);
+				while (!tmp_stack.empty())
+				{
+					path.push_back(tmp_stack.top());
+					tmp_stack.pop();
+				}
+
 				finish = true;
 				break;
 			}
 			else {
 				while (!branchable.empty())
 				{
-					/*
-					cout << branchable.top()->loc << endl;
-					cout << map[branchable.top()->loc.y][branchable.top()->loc.x + 1]->visited << endl;
-					cout << map[branchable.top()->loc.y - 1][branchable.top()->loc.x]->visited << endl;
-					cout << map[branchable.top()->loc.y][branchable.top()->loc.x - 1]->visited << endl;
-					cout << map[branchable.top()->loc.y + 1][branchable.top()->loc.x]->visited << endl;
-					*/
 					if ((map[branchable.top()->loc.y][branchable.top()->loc.x + 1]->visited == 1 ||
 						!walkable(branchable.top()->loc.x + 1, branchable.top()->loc.y)) &&
 						(map[branchable.top()->loc.y - 1][branchable.top()->loc.x]->visited == 1 ||
@@ -118,97 +74,91 @@ void Floor::walk() {
 								(map[branchable.top()->loc.y + 1][branchable.top()->loc.x]->visited == 1 ||
 									!walkable(branchable.top()->loc.x, branchable.top()->loc.y + 1))) {
 						branchable.pop();
-						//cout << "pop" << endl;
+
 					}
 					else break;
 				}
-				tree.leaf = go_to(tree.leaf, branchable.top());
+				stack<coor> tmp_stack = stack_go_to(rear, branchable.top());
+				if (tmp_stack.empty()) {
+					tmp_stack = stack_go_home(rear);
+					while (!tmp_stack.empty())
+					{
+						path.push_back(tmp_stack.top());
+						tmp_stack.pop();
+					}
+				}
+				else {
+					while (!tmp_stack.empty())
+					{
+						cur_step++;
+						path.push_back(tmp_stack.top());
+						tmp_stack.pop();
+					}
+					cur_step--;
+				}
+				rear = new Node(map[path.back().y][path.back().x]);
 			}
 
 
 		}
 		else {
 
-			int x = tree.leaf->cel->loc.x;
-			int y = tree.leaf->cel->loc.y;		// current cell position
+			int x = rear->cel->loc.x;
+			int y = rear->cel->loc.y;		// current cell position
 
 
-			bool find = false;
-
-			if ((tree.leaf->cost[0] > 0 && tree.leaf->cost[1] > 0) || (tree.leaf->cost[0] > 0 && tree.leaf->cost[2] > 0) || (tree.leaf->cost[0] > 0 && tree.leaf->cost[3] > 0) ||
-				(tree.leaf->cost[1] > 0 && tree.leaf->cost[2] > 0) || (tree.leaf->cost[1] > 0 && tree.leaf->cost[3] > 0) || (tree.leaf->cost[2] > 0 && tree.leaf->cost[3] > 0)) {
+			if ((rear->cost[0] > 0 && rear->cost[1] > 0) || (rear->cost[0] > 0 && rear->cost[2] > 0) || (rear->cost[0] > 0 && rear->cost[3] > 0) ||
+				(rear->cost[1] > 0 && rear->cost[2] > 0) || (rear->cost[1] > 0 && rear->cost[3] > 0) || (rear->cost[2] > 0 && rear->cost[3] > 0)) {
 				branchable.push(map[y][x]);
 			}
 
-			if (tree.leaf->cost[0] == tree.leaf->max_cost)
+			if (rear->cost[0] == rear->max_cost)
 			{
-				//set child & parent
-				tree.leaf->child = new Node(map[y][x + 1], tree.leaf);
 
 				path.push_back(map[y][x + 1]->loc);
 
 				// set cell branch_visit
 				map[y][x + 1]->visited = 1;
 				//set same level vector
-				tree.leaf = tree.leaf->child;
+				rear = new Node(map[y][x + 1]);
 
 				unclean_size--;
-
 				}
-			else if (tree.leaf->cost[1] == tree.leaf->max_cost)
-				{// one of max_grid
+			else if (rear->cost[1] == rear->max_cost)
+			{
+
+				path.push_back(map[y - 1][x]->loc);
+
+				// set cell branch_visit
+				map[y - 1][x]->visited = 1;
+				//set same level vector
+				rear = new Node(map[y - 1][x]);
+
+				unclean_size--;
 					
-					//set child & parent
-					tree.leaf->child =
-						new Node(map[y - 1][x], tree.leaf);
+			}
+			else if (rear->cost[2] == rear->max_cost)
+			{
+				path.push_back(map[y][x - 1]->loc);
 
-					path.push_back(map[y - 1][x]->loc);
+				// set cell branch_visit
+				map[y][x - 1]->visited = 1;
+				//set same level vector
+				rear = new Node(map[y][x - 1]);
 
-					// set cell branch_visit
-					map[y - 1][x]->visited = 1;
-					//set same level vector
-					tree.leaf = tree.leaf->child;
+				unclean_size--;
+			}
+			else if (rear->cost[3] == rear->max_cost)
+			{
+				path.push_back(map[y + 1][x]->loc);
 
-					unclean_size--;
-					
-					find = true;
-				}
-			else if (tree.leaf->cost[2] == tree.leaf->max_cost)
-				{// one of max_grid
+				// set cell branch_visit
+				map[y + 1][x]->visited = 1;
 
-					//set child & parent
-					tree.leaf->child =
-						new Node(map[y][x - 1], tree.leaf);
+				rear = new Node(map[y + 1][x]);
 
-					path.push_back(map[y][x - 1]->loc);
-
-					// set cell branch_visit
-					map[y][x - 1]->visited = 1;
-					//set same level vector
-					tree.leaf = tree.leaf->child;
-
-					unclean_size--;
-
-					find = true;
-				}
-			else if (tree.leaf->cost[3] == tree.leaf->max_cost)
-				{// one of max_grid
-
-					//set child & parent
-					tree.leaf->child =
-						new Node(map[y + 1][x], tree.leaf);
-
-					path.push_back(map[y + 1][x]->loc);
-
-					// set cell branch_visit
-					map[y + 1][x]->visited = 1;
-					//set same level vector
-					tree.leaf = tree.leaf->child;
-
-					unclean_size--;
-
-					find = true;
-				}
+				unclean_size--;
+			}
 			
 		}
 
@@ -218,62 +168,42 @@ void Floor::walk() {
 }
 
 void Floor::walk_back() {
-	//cout << "walk back!" << endl;
-	
-	while (tree.leaf->cel != home)
-	{
-		/*
-		debugg(tree.root);
 
-		for (int i = 0; i < row; i++) {
-			for (int j = 0; j < col; j++) {
-				cout << map[i][j]->visited << " ";
-			}
-			cout << endl;
-		}
-		cout << "step: " << cur_step << endl;
-		*/
+	while (rear->cel != home)
+	{
 		cur_step++;
 
+		set_node_cost(rear, true);
+		set_node_max_cost(rear, true);
 
-		set_node_cost(tree.leaf, true);
-		set_node_max_cost(tree.leaf, true);
+		int x = rear->cel->loc.x;
+		int y = rear->cel->loc.y;
 
-		int x = tree.leaf->cel->loc.x;
-		int y = tree.leaf->cel->loc.y;
-		/*
-		cout << "1 : " << tree.leaf->cost[0] << endl;
-		cout << "2 : " << tree.leaf->cost[1] << endl;
-		cout << "3 : " << tree.leaf->cost[2] << endl;
-		cout << "4 : " << tree.leaf->cost[3] << endl;
-		if (!branchable.empty())
-			cout << "branchable : " << branchable.top()->loc << endl;
-		else cout << "branchable emp"<< endl;
-		cout << "max : " << tree.leaf->max_cost << endl;
-		*/
+		if (rear->max_cost == 0) {
 
-		if (tree.leaf->max_cost == 0) {
 			if ((walkable(x + 1, y) && map[y][x + 1]->cost > 0 && map[y][x + 1]->visited) || (walkable(x, y - 1) && map[y - 1][x]->cost > 0 && map[y - 1][x]->visited) ||
 				(walkable(x - 1, y) && map[y][x - 1]->cost > 0 && map[y][x - 1]->visited) || (walkable(x, y + 1) && map[y + 1][x]->cost > 0 && map[y + 1][x]->visited))
 			{
 				branchable.push(map[y][x]);
 			}
+			
 			// 全都走過了
-			if (unclean_size == 0) {
-				go_home(tree.leaf);
+			if (unclean_size <= 0) {
+
+				stack<coor> tmp_stack = stack_go_home(rear);
+				while (!tmp_stack.empty())
+				{
+					path.push_back(tmp_stack.top());
+					tmp_stack.pop();
+				}
+
 				finish = true;
 				break;
 			}
 			else {
 				while (!branchable.empty())
 				{
-					/*
-					cout << branchable.top()->loc << endl;
-					cout << map[branchable.top()->loc.y][branchable.top()->loc.x + 1]->visited << endl;
-					cout << map[branchable.top()->loc.y - 1][branchable.top()->loc.x]->visited << endl;
-					cout << map[branchable.top()->loc.y][branchable.top()->loc.x - 1]->visited << endl;
-					cout << map[branchable.top()->loc.y + 1][branchable.top()->loc.x]->visited << endl;
-					*/
+					
 					if ((map[branchable.top()->loc.y][branchable.top()->loc.x + 1]->visited == 1 ||
 						!walkable(branchable.top()->loc.x + 1, branchable.top()->loc.y)) &&
 						(map[branchable.top()->loc.y - 1][branchable.top()->loc.x]->visited == 1 ||
@@ -285,24 +215,34 @@ void Floor::walk_back() {
 						branchable.pop();
 					else break;
 				}
-				tree.leaf = go_to(tree.leaf, branchable.top());
+
+				stack<coor> tmp_stack = stack_go_to(rear, branchable.top());
+
+				if (tmp_stack.empty()) {
+					tmp_stack = stack_go_home(rear);
+					while (!tmp_stack.empty())
+					{
+						path.push_back(tmp_stack.top());
+						tmp_stack.pop();
+					}
+				}
+				else {
+					while (!tmp_stack.empty())
+					{
+						cur_step++;
+						path.push_back(tmp_stack.top());
+						tmp_stack.pop();
+					}
+					cur_step--;
+				}
+				rear = rear = new Node(map[path.back().y][path.back().x]);
 			}
 			
 		}
 		else {
-			int x = tree.leaf->cel->loc.x;
-			int y = tree.leaf->cel->loc.y;		// current cell position
+			int x = rear->cel->loc.x;
+			int y = rear->cel->loc.y;		// current cell position
 
-
-			bool find = false;
-
-
-
-			int cost[4];
-			cost[0] = tree.leaf->cost[0];
-			cost[1] = tree.leaf->cost[1];
-			cost[2] = tree.leaf->cost[2];
-			cost[3] = tree.leaf->cost[3];
 
 			if ((walkable(x + 1, y) && map[y][x + 1]->cost > 0 && map[y][x + 1]->visited) || (walkable(x, y - 1) && map[y - 1][x]->cost > 0 && map[y - 1][x]->visited) ||
 				(walkable(x - 1, y) && map[y][x - 1]->cost > 0 && map[y][x - 1]->visited) || (walkable(x, y + 1) && map[y + 1][x]->cost > 0 && map[y + 1][x]->visited))
@@ -310,98 +250,70 @@ void Floor::walk_back() {
 				branchable.push(map[y][x]);
 			}
 
-			if (tree.leaf->cost[0] == tree.leaf->max_cost)
-			{// one of max_grid
-
-				//set child & parent
-				tree.leaf->child =
-					new Node(map[y][x + 1], tree.leaf);
-
+			if (rear->cost[0] == rear->max_cost)
+			{
 				path.push_back(map[y][x + 1]->loc);
 
 				// set cell branch_visit
 				map[y][x + 1]->visited = 1;
 				//set same level vector
-				tree.leaf = tree.leaf->child;
+				rear = new Node(map[y][x + 1]);
 
 				unclean_size--;
-
-				find = true;
+				
 			}
-			else if (tree.leaf->cost[1] == tree.leaf->max_cost)
-			{// one of max_grid
-
-				//set child & parent
-				tree.leaf->child =
-					new Node(map[y - 1][x], tree.leaf);
-
+			else if (rear->cost[1] == rear->max_cost)
+			{
 				path.push_back(map[y - 1][x]->loc);
 
 				// set cell branch_visit
 				map[y - 1][x]->visited = 1;
 				//set same level vector
-				tree.leaf = tree.leaf->child;
+				rear = new Node(map[y - 1][x]);
 
 				unclean_size--;
-
-				find = true;
+				
 			}
-			else if (tree.leaf->cost[2] == tree.leaf->max_cost)
-			{// one of max_grid
-
-				//set child & parent
-				tree.leaf->child =
-					new Node(map[y][x - 1], tree.leaf);
-
+			else if (rear->cost[2] == rear->max_cost)
+			{
 				path.push_back(map[y][x - 1]->loc);
 
 				// set cell branch_visit
 				map[y][x - 1]->visited = 1;
 				//set same level vector
-				tree.leaf = tree.leaf->child;
+				rear = new Node(map[y][x - 1]);
 
 				unclean_size--;
-
-				find = true;
+				
 			}
-			else if (tree.leaf->cost[3] == tree.leaf->max_cost )
-			{// one of max_grid
-
-				//set child & parent
-				tree.leaf->child =
-					new Node(map[y + 1][x], tree.leaf);
-
+			else if (rear->cost[3] == rear->max_cost )
+			{
 				path.push_back(map[y + 1][x]->loc);
 
 				// set cell branch_visit
 				map[y + 1][x]->visited = 1;
 				//set same level vector
-				tree.leaf = tree.leaf->child;
+				rear = new Node(map[y + 1][x]);
 
 				unclean_size--;
-
-				find = true;
+				
 			}
 
 		}
 
 	}
 	cur_step = 0;
-
-
 }
 
 
-
-//A*
-Node* Floor::go_home(Node * cur) {
+stack<coor> Floor::stack_go_home(Node * cur) {
 
 	int root_x = (cur)->cel->loc.x;
 	int root_y = (cur)->cel->loc.y;
 
 
-	Node* fake_root = new Node((cur)->cel,cur->parent);
-	priority_queue<Node*,vector<Node*>, cmp> open;
+	Node* fake_root = new Node((cur)->cel, cur->parent);
+	priority_queue<Node*, vector<Node*>, cmp> open;
 
 	set<cell*> close = {};
 	open.push(fake_root);
@@ -411,69 +323,8 @@ Node* Floor::go_home(Node * cur) {
 
 	while (open.top()->cel != home)
 	{
-		//cout << "top: " << open.top()->cel->loc <<" home: " << home->loc<<endl;
 		Node * n = open.top();
 		open.pop();
-		int x = n->cel->loc.x;
-		int y = n->cel->loc.y;
-		
-		int child = 0;
-		if (walkable(x + 1, y) && !close.count(map[y][x + 1]))
-		{
-			n->childs[child] = new Node(map[y][x + 1],n);
-			open.push(n->childs[child++]);
-		}
-		if (walkable(x, y - 1) && !close.count(map[y - 1][x]))
-		{
-			n->childs[child] = new Node(map[y - 1][x], n);
-			open.push(n->childs[child++]);
-		}
-		if (walkable(x - 1, y) && !close.count(map[y][x - 1]))
-		{
-			n->childs[child] = new Node(map[y][x - 1], n);
-			open.push(n->childs[child++]);
-		}
-		if (walkable(x, y + 1) && !close.count(map[y + 1][x]))
-		{
-			n->childs[child] = new Node(map[y + 1][x], n);
-			open.push(n->childs[child++]);
-		}
-
-		close.insert(map[y][x]);
-
-	}
-
-	(cur) = reverse_tree(open.top());
-	cur_step = 0;
-	return open.top();
-
-}
-
-Node* Floor::go_to(Node* src, cell* dest) {
-
-	//cout << "  goto!  " << endl;
-
-	Node* cur = src;
-
-	int root_x = (cur)->cel->loc.x;
-	int root_y = (cur)->cel->loc.y;
-
-
-	Node* fake_root = new Node((cur)->cel);
-	vector<Node*> open;
-
-	set<cell*> close = {};
-	open.push_back(fake_root);
-	int min_index = 0;
-
-
-
-	while (open[min_index]->cel != dest)
-	{
-		
-		
-		Node * n = open[min_index];
-		open.erase(open.begin() + min_index);
 		int x = n->cel->loc.x;
 		int y = n->cel->loc.y;
 
@@ -481,53 +332,117 @@ Node* Floor::go_to(Node* src, cell* dest) {
 		if (walkable(x + 1, y) && !close.count(map[y][x + 1]))
 		{
 			n->childs[child] = new Node(map[y][x + 1], n);
-			open.push_back(n->childs[child++]);
+			open.push(n->childs[child++]);
 		}
 		if (walkable(x, y - 1) && !close.count(map[y - 1][x]))
 		{
 			n->childs[child] = new Node(map[y - 1][x], n);
-			open.push_back(n->childs[child++]);
+			open.push(n->childs[child++]);
 		}
 		if (walkable(x - 1, y) && !close.count(map[y][x - 1]))
 		{
 			n->childs[child] = new Node(map[y][x - 1], n);
-			open.push_back(n->childs[child++]);
+			open.push(n->childs[child++]);
 		}
 		if (walkable(x, y + 1) && !close.count(map[y + 1][x]))
 		{
 			n->childs[child] = new Node(map[y + 1][x], n);
-			open.push_back(n->childs[child++]);
+			open.push(n->childs[child++]);
+		}
+
+		close.insert(map[y][x]);
+
+	}
+
+	stack<coor> reverse_path;
+	Node * cur_ = open.top();
+	while (cur_ != nullptr)
+	{
+		reverse_path.push(cur_->cel->loc);
+		cur_ = cur_->parent;
+	}
+	cur_step = 0;
+	reverse_path.pop();
+	
+	return reverse_path;
+
+}
+
+
+// min_index use heap tree?(自己刻)
+
+
+stack<coor> Floor::stack_go_to(Node* src, cell* dest) {
+
+	Node* cur = src;
+
+	int root_x = (cur)->cel->loc.x;
+	int root_y = (cur)->cel->loc.y;
+
+	Node* fake_root = new Node((cur)->cel);
+	myheap open(dest->loc);
+
+
+	set<cell*> close = {};
+
+
+	open.push(fake_root);
+
+
+
+	int min_index = 0;
+
+	while (open.top()->cel != dest)
+	{
+		Node * n = open.top();
+		open.pop();
+		int x = n->cel->loc.x;
+		int y = n->cel->loc.y;
+
+		int child = 0;
+		if (walkable(x + 1, y) && !close.count(map[y][x + 1]))
+		{
+			n->childs[child] = new Node(map[y][x + 1], n);
+			open.push(n->childs[child++]);
+		}
+		if (walkable(x, y - 1) && !close.count(map[y - 1][x]))
+		{
+			n->childs[child] = new Node(map[y - 1][x], n);
+			open.push(n->childs[child++]);
+		}
+		if (walkable(x - 1, y) && !close.count(map[y][x - 1]))
+		{
+			n->childs[child] = new Node(map[y][x - 1], n);
+			open.push(n->childs[child++]);
+		}
+		if (walkable(x, y + 1) && !close.count(map[y + 1][x]))
+		{
+			n->childs[child] = new Node(map[y + 1][x], n);
+			open.push(n->childs[child++]);
 		}
 
 		close.insert(map[y][x]);
 
 
-
-		
-
-		min_index = 0;
-		for (unsigned i = 0; i < open.size(); i++) {
-
-			if (abs(open[min_index]->cel->loc.x - dest->loc.x) + abs(open[min_index]->cel->loc.y - dest->loc.y)
-				>
-				abs(open[i]->cel->loc.x - dest->loc.x) + abs(open[i]->cel->loc.y - dest->loc.y))
-				min_index = i;
-
-		}
-
-	}
-	Node* tmp = reverse_tree(open[min_index]);
-
-	if (tmp == nullptr) {
-		return go_home(tree.leaf);
-	}
-	else {
-		src->child = tmp->child;
-		cur_step += goto_step;
-		return open[min_index];
 	}
 	
+	stack<coor> reverve_path;
+	cur = open.top();
+	int dest_dist = open.top()->cel->dist;
+	while (cur != nullptr)
+	{
+		reverve_path.push(cur->cel->loc);
+		cur = cur->parent;
+	}
+	reverve_path.pop();
 
+
+	int reserve_path_step = reverve_path.size();
+
+	if (reserve_path_step + dest_dist > left_step()) return stack<coor> {};
+	else {
+		return reverve_path;
+	}
 }
 
 //evaluated cost and distance
@@ -636,34 +551,14 @@ void Floor::evaluate(cell* root) {
 			map[y + 1][x]->disted = true;
 			q.push(map[y + 1][x]);
 		}
-
 	}
-
-
-
-
 }
-
-
 
 bool Floor::walkable(int x, int y) {
 
 	if (x < 0 || x >= col || y < 0 || y >= row) return false;
 	if ((*map[y][x]).attr == WALL) return false;
 	else return true;
-
-}
-
-
-
-void debugg(Node* root) {
-	Node* cur = root;
-	while (cur != nullptr)
-	{
-		cout << cur->cel->loc << " ";
-		cur = cur->child;
-	}
-	cout << endl;
 
 }
 
