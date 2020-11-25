@@ -11,6 +11,9 @@
 #include <queue>
 #include <stack>
 #include <time.h>
+
+
+
 double START;
 double PROCESS_START;
 double END;
@@ -38,7 +41,7 @@ enum attribute {
 struct cell {
 
 	coor loc;
-	set<int> visited_branches;	
+	bool visited;	
 	bool evaluated;
 	bool disted;
 	enum attribute attr;
@@ -46,9 +49,9 @@ struct cell {
 	int dist;
 
 	cell(coor _loc = coor(0, 0), set<int> v_b = set<int>{}, attribute _a = ROAD, int _cost = 0) :
-		loc(_loc), visited_branches(v_b), attr(_a), cost(_cost),evaluated(false),disted(false){}
+		loc(_loc), visited(false), attr(_a), cost(_cost),evaluated(false),disted(false){}
 	cell(coor _loc, attribute _a, int _cost = 0) :
-		loc(_loc), attr(_a), cost(_cost), evaluated(false), disted(false) {};
+		loc(_loc), attr(_a), cost(_cost), evaluated(false), disted(false), visited(false) {};
 
 
 
@@ -61,7 +64,8 @@ struct Node {
 
 	cell* cel;
 	Node * parent;
-	Node * child[4];
+	Node * child;
+	Node * childs[4];
 						//以下兩個在尋路的時候才會附值
 	int cost[4];		// 右上左下
 	int max_cost;
@@ -69,11 +73,7 @@ struct Node {
 	Node(cell* c = new cell,Node*p = nullptr) :
 		cel(c),parent(p)
 	{
-		child[0] = nullptr;
-		child[1] = nullptr;
-		child[2] = nullptr;
-		child[3] = nullptr;
-
+		child = nullptr;
 	}
 	
 
@@ -83,13 +83,13 @@ struct cmp
 	bool operator() (Node* lhs, Node* rhs) { return lhs->cel->dist > rhs->cel->dist; }
 };
 
-Node* reverse_tree(Node* cur);
+
+
+
 
 class OneTripTree {
 	Node* root;
-	vector<Node*> leaves;
-	int cur_branch;
-	int total_branch;
+	Node* leaf;
 
 
 public:
@@ -98,10 +98,6 @@ public:
 	inline Node* get_root() { return root; }
 
 	void delete_tree(Node * cur) {
-		for (int i = 0; i < 4; i++) {
-			delete_tree(cur->child[i]);
-		}
-		delete cur;
 	}
 
 private:
@@ -115,18 +111,21 @@ class Floor {
 	int row;
 	int col;
 	int battery;
-	int emp_min_step;
 	int cur_step;
+	int goto_step;
+	stack<cell*> branchable;
 	bool finish;
+	int init_unclean_size;
+	vector<coor> path;
 
-	Node * finalNode;
-	vector<cell*> unclean;
-	cell* home;
-	cell*** map;
 	OneTripTree tree;
 	
 
 public:
+	cell* home;
+	cell*** map;
+	set<cell*> unclean;
+	int unclean_size;
 	Floor() {}
 	~Floor() {}
 
@@ -135,7 +134,7 @@ public:
 	cell get_home() { return *home; }
 	inline int left_step() { return battery - cur_step; }
 	inline int get_unclean_size() { return unclean.size(); }
-
+	inline Node* get_root() { return tree.root; }
 
 
 	void clear();
@@ -146,16 +145,14 @@ public:
 private:
 
 	void evaluate(cell* root);
-	Node** find_emp_cell(Node* root);
-	void first_step();
 	void walk();
 	void walk_back();
 	Node* go_home(Node* cur);
-
+	Node* go_to(Node* src, cell* dest);
+	Node* reverse_tree(Node* cur);
 
 	void set_node_max_cost(Node* node,bool consider_dist);
 	void set_node_cost(Node* node,bool consider_dist);
-	bool visited(Node* node, int x, int y);
 
 	bool walkable(int x, int y);
 
